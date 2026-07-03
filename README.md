@@ -2,41 +2,40 @@
 
 An asynchronous backend sandbox built to master production-grade web services in `Rust`. 
 
-## Why Webby?
-Reading documentation only takes you so far. `Webby` is a hands-on laboratory designed to bridge the gap between "Hello World" tutorials and production realities. It serves as a playground to wrestle with `async` state, write type-safe middleware, and understand how the `Tokio` and `Tower` ecosystem handles traffic under the hood.
-
 ---
 
 ## Core Learning Takeaways
 
-* **Thread-Safe State & Static Keys:** Sharing database connection pools via `Arc<AppState>` combined with modern `std::sync::LazyLock` for zero-overhead, safe lazy initialization of cryptographic keys.
-* **Type-Safe Extraction & RBAC:** Leveraging `axum_extra::TypedHeader` to extract Bearer tokens directly from request parts, parsing them into verifiable `Claims` before routes are executed, paired with granular role-matching middleware (`require_role`).
-* **Socketless Integration Testing:** Testing the entire HTTP pipeline natively in-memory without binding to a physical TCP port. Uses `tower::Service` utilities (`oneshot`/`call`) combined with an ephemeral `sqlite::memory:` schema instantiation for instantaneous, deterministic testing.
-* **Defensive Traffic Control:** Layering Tower middleware to handle global rate-limiting (`GovernorLayer`), request timeouts (`TimeoutLayer`), and concurrency limits.
-* **Declarative Payload Validation:** Binding the `validator` crate directly to incoming deserialization pipelines to sanitize names, string boundaries, and email patterns before hitting domain logic.
+* **Thread-Safe State & Static Keys:** Sharing DB pools via `Arc<AppState>` and lazy initializing crypto keys with `std::sync::LazyLock`.
+* **Type-Safe Extraction & RBAC:** Extracting Bearer tokens via `TypedHeader` into `Claims` paired with role-matching middleware (`require_role`).
+* **Socketless Integration Testing:** Testing the HTTP pipeline in-memory via `tower::Service` (`oneshot`/`call`) using an ephemeral `sqlite::memory:` database.
+* **Defensive Traffic Control:** Layering Tower middleware for global rate-limiting (`GovernorLayer`), timeouts (`TimeoutLayer`), and concurrency limits.
+* **Declarative Payload Validation:** Binding the `validator` crate to deserialization pipelines to sanitize input data before hitting domain logic.
 
 ---
 
-## API Endpoints Matrix
+## API Endpoints
 
-| Method | Endpoint | Description | Auth / Extractors / Middleware |
+### Global Middleware
+* **Rate Limiting:** `GovernorLayer` (2 req/sec, burst 5) via client IP.
+* **Timeouts:** `TimeoutLayer` (10-second limit).
+* **Observability:** `TraceLayer` structured metrics.
+
+### Routes Matrix
+
+| Method | Endpoint | Description | Extractors / Middleware |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/` | Root Index | None |
 | **GET** | `/pages` | Query-driven list pagination | `Query<Pagination>` |
-| **POST**| `/login` | Authenticate user and issue JWT | `Json<AuthPayload>` |
+| **POST**| `/login` | Authenticate and issue JWT | `Json<AuthPayload>` |
 | **GET** | `/users/` | User section about | Concurrency Limited (Max 5) |
-| **POST**| `/users/create` | Validate and insert new user | `Json<CreateUser>`, Concurrency Limited (Max 5) |
-| **PATCH**| `/users/update/{id}` | Update user profile | **Requires JWT (`Claims`)**, `Path<u64>`, `Json<UpdateUser>`, Concurrency Limited (Max 5) |
-| **DELETE**| `/users/delete/{id}` | Remove a specific user by ID | **Requires JWT (`Claims`)**, `Path<u64>`, Concurrency Limited (Max 5) |
-| **GET** | `/users/greet/{name}` | Dynamic path injection | `Path<String>`, Concurrency Limited (Max 5) |
-| **GET** | `/admin/list` | Asynchronously fetch all users | **Requires JWT (`Claims`)**, `Query<Pagination>`, Admin Role Middleware |
-| **PATCH**| `/admin/{id}/role` | Modify a user's access role level | **Requires JWT (`Claims`)**, `Path<u64>`, `Json<ChangeRolePayload>`, Admin Role Middleware |
-| **ANY** | `/assets/*` / Fallback | Static asset server / SPA catch-all | `ServeDir` ("public") + `ServeFile` ("public/index.html") |
-
-> **Global Middleware Layers Applied:** 
-> * **Rate Limiting:** `GovernorLayer` (2 req/sec, burst size 5) using client IP tracking.
-> * **Timeouts:** `TimeoutLayer` enforcing a strict 10-second request termination limit.
-> * **Observability:** `TraceLayer` capture via `tracing` for structured HTTP request metrics.
+| **POST**| `/users/create` | Validate and insert new user | `Json<CreateUser>` + Concurrency Limited |
+| **PATCH**| `/users/update/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` + Concurrency Limited |
+| **DELETE**| `/users/delete/{id}`| Remove a user by ID | **JWT (`Claims`)** + `Path<u64>` + Concurrency Limited |
+| **GET** | `/users/greet/{name}`| Dynamic path injection | `Path<String>` + Concurrency Limited |
+| **GET** | `/admin/list` | Fetch all users | **JWT (`Claims`)** + `Query<Pagination>` + Admin Role |
+| **PATCH**| `/admin/{id}/role` | Modify user role level | **JWT (`Claims`)** + `Path<u64>` + `Json<ChangeRolePayload>` + Admin Role |
+| **ANY** | `/assets/*` | Static asset / SPA fallback | `ServeDir` / `ServeFile` ("public") |
 
 ---
 
