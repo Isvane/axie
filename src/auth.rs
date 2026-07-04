@@ -21,7 +21,7 @@ static KEYS: LazyLock<Keys> = LazyLock::new(|| {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct Claims {
     pub(crate) sub: String,
-    company: String,
+    pub(crate) company: String,
     pub(crate) role: Role,
     exp: u64,
 }

@@ -20,7 +20,7 @@ fn create_test_request(method: &str, uri: &str) -> axum::http::request::Builder 
 fn get_test_token(user_id: &str) -> String {
     sign_token(
         user_id.to_string(),
-        "TestCompany".to_string(),
+        "Microsoft".to_string(),
         models::Role::Admin,
     )
     .expect("Failed to sign test token")

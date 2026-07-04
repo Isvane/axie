@@ -46,6 +46,18 @@ pub async fn change_user_role(
         .await
         .map_err(|_| AppError::UserNotFound("User not found".to_string()))?;
 
+    if user.company != claims.company {
+        return Err(AppError::Forbidden(
+            "Cannot modify users outside your company".to_string(),
+        ));
+    }
+
+    if claims.role == Role::Admin && (user.role == Role::Owner || payload.role == Role::Owner) {
+        return Err(AppError::Forbidden(
+            "Admins cannot modify or assign Owner roles".to_string(),
+        ));
+    }
+
     user.update().role(payload.role).exec(&mut db).await?;
 
     Ok(ApiResponse::Message(
