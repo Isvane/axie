@@ -1,6 +1,6 @@
-# Webby
+# 🕸️ Webby
 
-An asynchronous backend sandbox built to master production-grade web services in `Rust`. 
+An asynchronous backend sandbox built to master production-grade web services in Rust.
 
 ---
 
@@ -47,11 +47,11 @@ JWT_SECRET=your_super_secret_key_here
 ```
 
 ### 2. Run the Server
-```bash
+```console
 # Automatically builds SQLite schema and listens at http://localhost:3000
 cargo run
 ```
 ### 3. Run Test
-```bash
+```console
 cargo test
 ```
