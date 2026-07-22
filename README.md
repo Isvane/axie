@@ -1,4 +1,4 @@
-# 🕸️ Webby
+# Dororo
 
 An asynchronous backend sandbox built to master production-grade web services in Rust.
 
