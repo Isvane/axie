@@ -1,6 +1,6 @@
 # Dororo
 
-An asynchronous backend sandbox built to master production-grade web services in Rust.
+An asynchronous backend sandbox built to learn how to build a web services in Rust.
 
 ---
 
@@ -9,7 +9,7 @@ An asynchronous backend sandbox built to master production-grade web services in
 * **Thread-Safe State & Static Keys:** Sharing DB pools via `Arc<AppState>` and lazy initializing crypto keys with `std::sync::LazyLock`.
 * **Type-Safe Extraction & RBAC:** Extracting Bearer tokens via `TypedHeader` into `Claims` paired with role-matching middleware (`require_role`).
 * **Socketless Integration Testing:** Testing the HTTP pipeline in-memory via `tower::Service` (`oneshot`/`call`) using an ephemeral `sqlite::memory:` database.
-* **Defensive Traffic Control:** Layering Tower middleware for global rate-limiting (`GovernorLayer`), timeouts (`TimeoutLayer`), and concurrency limits.
+* **Defensive Traffic Control:** Layering Tower middleware for global rate-limiting (`GovernorLayer`) and timeouts (`TimeoutLayer`).
 * **Declarative Payload Validation:** Binding the `validator` crate to deserialization pipelines to sanitize input data before hitting domain logic.
 
 ---
@@ -17,7 +17,7 @@ An asynchronous backend sandbox built to master production-grade web services in
 ## API Endpoints
 
 ### Global Middleware
-* **Rate Limiting:** `GovernorLayer` (2 req/sec, burst 5) via client IP.
+* **Rate Limiting:** `GovernorLayer` (50 req/sec, burst 200) via client IP.
 * **Timeouts:** `TimeoutLayer` (10-second limit).
 * **Observability:** `TraceLayer` structured metrics.
 
@@ -28,14 +28,15 @@ An asynchronous backend sandbox built to master production-grade web services in
 | **GET** | `/` | Root Index | None |
 | **GET** | `/pages` | Query-driven list pagination | `Query<Pagination>` |
 | **POST**| `/login` | Authenticate and issue JWT | `Json<AuthPayload>` |
-| **GET** | `/users/` | User section about | Concurrency Limited (Max 5) |
-| **POST**| `/users/create` | Validate and insert new user | `Json<CreateUser>` + Concurrency Limited |
-| **PATCH**| `/users/update/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` + Concurrency Limited |
-| **DELETE**| `/users/delete/{id}`| Remove a user by ID | **JWT (`Claims`)** + `Path<u64>` + Concurrency Limited |
-| **GET** | `/users/greet/{name}`| Dynamic path injection | `Path<String>` + Concurrency Limited |
+| **GET** | `/users/` | User section about | None |
+| **POST**| `/users/create` | Validate and insert new user | `Json<CreateUser>` |
+| **PATCH**| `/users/update/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` |
+| **DELETE**| `/users/delete/{id}`| Remove a user by ID | **JWT (`Claims`)** + `Path<u64>` |
+| **GET** | `/users/greet/{name}`| Dynamic path injection | `Path<String>` |
 | **GET** | `/admin/list` | Fetch all users | **JWT (`Claims`)** + `Query<Pagination>` + Admin Role |
 | **PATCH**| `/admin/{id}/role` | Modify user role level | **JWT (`Claims`)** + `Path<u64>` + `Json<ChangeRolePayload>` + Admin Role |
 | **POST**| `/owner/transfer-ownership` | Transfer company ownership | **JWT (`Claims`)** + `Json<TransferOwnershipPayload>` + Owner Role |
+| **PATCH**| `/owner/rename-company` | Update company name for all members | **JWT (`Claims`)** + `Json<UpdateCompanyPayload>` + Owner Role |
 | **ANY** | `/assets/*` | Static asset / SPA fallback | `ServeDir` / `ServeFile` ("public") |
 
 ---

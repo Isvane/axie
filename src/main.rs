@@ -7,14 +7,12 @@ use axum::{
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
-use tower::limit::ConcurrencyLimitLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     services::{ServeDir, ServeFile},
     timeout::TimeoutLayer,
     trace::TraceLayer,
 };
-use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod auth;
@@ -79,8 +77,8 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
     let state = Arc::new(AppState { db });
 
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(2)
-        .burst_size(5)
+        .per_second(50)
+        .burst_size(200)
         .key_extractor(tower_governor::key_extractor::SmartIpKeyExtractor)
         .finish()
         .unwrap();
@@ -90,8 +88,7 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
         .route("/create", post(handlers::users::create_user))
         .route("/delete/{id}", delete(handlers::users::delete_user))
         .route("/update/{id}", patch(handlers::users::update_users))
-        .route("/greet/{name}", get(handlers::users::greet_user))
-        .layer(ConcurrencyLimitLayer::new(5));
+        .route("/greet/{name}", get(handlers::users::greet_user));
 
     let admin_routes = Router::new()
         .route("/list", get(handlers::admin::list_users))
@@ -121,17 +118,11 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
         .fallback_service(
             ServeDir::new("public").not_found_service(ServeFile::new("public/index.html")),
         )
+        .layer(GovernorLayer::new(governor_conf))
         .layer((
-            TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<_>| {
-                info_span!(
-                    "http_request",
-                    method = %request.method(),
-                    uri = %request.uri(),
-                )
-            }),
+            TraceLayer::new_for_http(),
             TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(10)),
         ))
-        .layer(GovernorLayer::new(governor_conf))
         .with_state(state)
 }
 
