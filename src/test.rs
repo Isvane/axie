@@ -26,6 +26,15 @@ fn get_test_token(user_id: &str) -> String {
     .expect("Failed to sign test token")
 }
 
+fn get_owner_token(user_id: &str, company: &str) -> String {
+    sign_token(
+        user_id.to_string(),
+        company.to_string(),
+        models::Role::Owner,
+    )
+    .expect("Failed to sign owner test token")
+}
+
 async fn setup_test_app() -> axum::Router {
     unsafe {
         std::env::set_var("JWT_SECRET", "test_super_secret_key_123");
@@ -409,4 +418,107 @@ async fn test_change_user_role_forbidden_as_regular_user() {
         .unwrap();
 
     assert_eq!(response2.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_success() {
+    let mut app = setup_test_app().await;
+
+    let _ = app
+        .call(
+            create_test_request("POST", "/users/create")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"name": "Owner User", "email": "owner@microsoft.com", "password": "password123", "company": "Microsoft"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let _ = app
+        .call(
+            create_test_request("POST", "/users/create")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"name": "New Owner", "email": "new_owner@microsoft.com", "password": "password123", "company": "Microsoft"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let owner_token = get_owner_token("1", "Microsoft");
+
+    let response = app
+        .call(
+            create_test_request("POST", "/owner/transfer-ownership")
+                .header("Authorization", format!("Bearer {}", owner_token))
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"new_owner_id": 2}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_str.contains("Ownership successfully transferred"));
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_forbidden_for_admin() {
+    let mut app = setup_test_app().await;
+
+    let admin_token = get_test_token("1");
+
+    let response = app
+        .call(
+            create_test_request("POST", "/owner/transfer-ownership")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"new_owner_id": 2}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_transfer_ownership_cross_company_forbidden() {
+    let mut app = setup_test_app().await;
+
+    let _ = app
+        .call(
+            create_test_request("POST", "/users/create")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"name": "Google User", "email": "user@google.com", "password": "password123", "company": "Google"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let owner_token = get_owner_token("2", "Microsoft");
+
+    let response = app
+        .call(
+            create_test_request("POST", "/owner/transfer-ownership")
+                .header("Authorization", format!("Bearer {}", owner_token))
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"new_owner_id": 1}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }

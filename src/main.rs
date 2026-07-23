@@ -100,10 +100,20 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
             auth::require_role(models::Role::Admin, c, r, n)
         }));
 
+    let owner_routes = Router::new()
+        .route(
+            "/transfer-ownership",
+            post(handlers::owner::transfer_ownership),
+        )
+        .route_layer(middleware::from_fn(|c, r, n| {
+            auth::require_role(models::Role::Owner, c, r, n)
+        }));
+
     Router::new()
         .route("/", get(handlers::items::index))
         .route("/pages", get(handlers::items::list_items))
         .route("/login", post(handlers::authentication::login))
+        .nest("/owner", owner_routes)
         .nest("/admin", admin_routes)
         .nest("/users", user_routes)
         .nest_service("/assets", ServeDir::new("public"))

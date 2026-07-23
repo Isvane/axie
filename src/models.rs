@@ -57,3 +57,8 @@ pub(crate) struct UpdateUser {
 pub(crate) struct ChangeRolePayload {
     pub(crate) role: Role,
 }
+
+#[derive(Deserialize)]
+pub(crate) struct TransferOwnershipPayload {
+    pub(crate) new_owner_id: u64,
+}
