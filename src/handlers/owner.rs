@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::auth::Claims;
 use crate::errors::{ApiResponse, AppError};
-use crate::models::{AppState, Role, TransferOwnershipPayload, User};
+use crate::models::{AppState, Role, TransferOwnershipPayload, UpdateCompanyPayload, User};
 
 pub async fn transfer_ownership(
     claims: Claims,
@@ -57,5 +57,38 @@ pub async fn transfer_ownership(
             "Ownership successfully transferred to user {}",
             payload.new_owner_id
         ),
+    ))
+}
+
+pub async fn rename_company(
+    claims: Claims,
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<UpdateCompanyPayload>,
+) -> Result<ApiResponse, AppError> {
+    if claims.role != Role::Owner {
+        return Err(AppError::Forbidden(
+            "Only the company owner can change the company name".to_string(),
+        ));
+    }
+
+    let company_name = claims.company;
+
+    if company_name == payload.company {
+        return Err(AppError::Forbidden(
+            "You are already using this name".to_string(),
+        ));
+    }
+
+    let mut db = state.db.clone();
+
+    User::filter(User::fields().company().eq(&company_name))
+        .update()
+        .company(&payload.company)
+        .exec(&mut db)
+        .await?;
+
+    Ok(ApiResponse::Message(
+        StatusCode::OK,
+        format!("Successfully changed company name to {}", payload.company),
     ))
 }

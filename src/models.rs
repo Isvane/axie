@@ -62,3 +62,9 @@ pub(crate) struct ChangeRolePayload {
 pub(crate) struct TransferOwnershipPayload {
     pub(crate) new_owner_id: u64,
 }
+
+#[derive(Deserialize, validator::Validate)]
+pub(crate) struct UpdateCompanyPayload {
+    #[validate(length(min = 1, message = "Company name cannot be empty"))]
+    pub(crate) company: String,
+}

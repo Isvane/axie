@@ -105,6 +105,7 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
             "/transfer-ownership",
             post(handlers::owner::transfer_ownership),
         )
+        .route("/rename-company", post(handlers::owner::rename_company))
         .route_layer(middleware::from_fn(|c, r, n| {
             auth::require_role(models::Role::Owner, c, r, n)
         }));

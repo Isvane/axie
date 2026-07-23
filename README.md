@@ -35,6 +35,7 @@ An asynchronous backend sandbox built to master production-grade web services in
 | **GET** | `/users/greet/{name}`| Dynamic path injection | `Path<String>` + Concurrency Limited |
 | **GET** | `/admin/list` | Fetch all users | **JWT (`Claims`)** + `Query<Pagination>` + Admin Role |
 | **PATCH**| `/admin/{id}/role` | Modify user role level | **JWT (`Claims`)** + `Path<u64>` + `Json<ChangeRolePayload>` + Admin Role |
+| **POST**| `/owner/transfer-ownership` | Transfer company ownership | **JWT (`Claims`)** + `Json<TransferOwnershipPayload>` + Owner Role |
 | **ANY** | `/assets/*` | Static asset / SPA fallback | `ServeDir` / `ServeFile` ("public") |
 
 ---
