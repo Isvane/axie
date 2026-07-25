@@ -43,17 +43,13 @@ An asynchronous backend sandbox built to learn how to build a web services in Ru
 
 ## Getting Started
 
-### 1. Setup Environment
-```env
-JWT_SECRET=your_super_secret_key_here
-```
+```console
+# copy env
+cp env.example env
 
-### 2. Run the Server
-```console
-# Automatically builds SQLite schema and listens at http://localhost:3000
-cargo run
-```
-### 3. Run Test
-```console
+# run the service
+docker compose up --build
+
+# testing
 cargo test
 ```
