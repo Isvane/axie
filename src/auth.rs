@@ -120,20 +120,31 @@ impl Keys {
     }
 }
 
-pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
-    let salt = SaltString::generate(&mut rand::rngs::OsRng);
-    let argon2 = Argon2::default();
+pub async fn hash_password(password: String) -> Result<String, AppError> {
+    tokio::task::spawn_blocking(move || {
+        let salt = SaltString::generate(&mut rand::rngs::OsRng);
+        let argon2 = Argon2::default();
 
-    let password_hash = argon2.hash_password(password.as_bytes(), &salt)?;
-    Ok(password_hash.to_string())
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map_err(|e| AppError::InternalDbError(format!("Hashing failed: {e}")))?;
+
+        Ok(password_hash.to_string())
+    })
+    .await
+    .map_err(|e| AppError::InternalDbError(format!("Thread join error: {e}")))?
 }
 
-pub fn verify_password(password: &str, hashed_password: &str) -> Result<bool, AuthError> {
-    let parsed_hash =
-        PasswordHash::new(hashed_password).map_err(|_| AuthError::InvalidHashFormat)?;
+pub async fn verify_password(password: String, hashed_password: String) -> Result<bool, AuthError> {
+    tokio::task::spawn_blocking(move || {
+        let parsed_hash =
+            PasswordHash::new(&hashed_password).map_err(|_| AuthError::InvalidHashFormat)?;
 
-    match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
-        Ok(_) => Ok(true),
-        Err(_) => Err(AuthError::PasswordHashDontMatch),
-    }
+        match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
+            Ok(_) => Ok(true),
+            Err(_) => Err(AuthError::PasswordHashDontMatch),
+        }
+    })
+    .await
+    .map_err(|_| AuthError::InvalidHashFormat)?
 }

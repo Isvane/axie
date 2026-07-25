@@ -14,10 +14,12 @@ pub async fn login(
         .await
         .map_err(|_| AuthError::WrongCredentials)?;
 
-    verify_password(&payload.password, &user.password_hash).map_err(|e| match e {
-        AuthError::InvalidHashFormat => AuthError::InvalidHashFormat,
-        _ => AuthError::WrongCredentials,
-    })?;
+    verify_password(payload.password, user.password_hash)
+        .await
+        .map_err(|e| match e {
+            AuthError::InvalidHashFormat => AuthError::InvalidHashFormat,
+            _ => AuthError::WrongCredentials,
+        })?;
 
     let company_name = user.company.clone();
     let role = user.role;

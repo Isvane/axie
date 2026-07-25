@@ -76,9 +76,7 @@ pub async fn create_user(
         role: _input_role,
     } = input;
 
-    let password_hash = hash_password(password.as_str())
-        .map_err(|e| AppError::InternalDbError(format!("Hashing failed: {}", e)))?;
-
+    let password_hash = hash_password(password).await?;
     let role = Role::User;
 
     let _new_user = toasty::create!(User {
