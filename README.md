@@ -43,7 +43,7 @@ An asynchronous backend sandbox built to learn how to build a web services in Ru
 
 ## Getting Started
 
-```console
+```bash
 # copy env
 cp env.example env
 
