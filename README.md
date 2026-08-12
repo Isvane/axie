@@ -1,4 +1,4 @@
-# Dororo
+# Axie
 
 An asynchronous backend sandbox built to learn how to build a web services in Rust.
 

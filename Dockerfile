@@ -11,7 +11,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 COPY . .
-RUN cargo build --release --bin webby
+RUN cargo build --release --bin axie
 
 FROM scratch AS runtime
 WORKDIR /app
@@ -21,10 +21,10 @@ COPY --from=chef /usr/share/zoneinfo /usr/share/zoneinfo
 
 COPY ./public /app/public
 
-COPY --from=builder /app/target/release/webby /app/webby
+COPY --from=builder /app/target/release/axie /app/axie
 
 EXPOSE 3000
 
 ENV RUST_LOG="info,tower_http=debug,axum::rejection=trace"
 
-CMD ["./webby"]
+CMD ["./axie"]

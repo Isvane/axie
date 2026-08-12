@@ -88,6 +88,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "axie"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "axum",
+ "axum-extra",
+ "dotenvy",
+ "jsonwebtoken",
+ "rand 0.8.6",
+ "serde",
+ "serde_json",
+ "toasty",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tower_governor",
+ "tracing",
+ "tracing-subscriber",
+ "validator",
+]
+
+[[package]]
 name = "axum"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3043,28 +3065,6 @@ checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "webby"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "axum",
- "axum-extra",
- "dotenvy",
- "jsonwebtoken",
- "rand 0.8.6",
- "serde",
- "serde_json",
- "toasty",
- "tokio",
- "tower",
- "tower-http",
- "tower_governor",
- "tracing",
- "tracing-subscriber",
- "validator",
 ]
 
 [[package]]
