@@ -4,13 +4,18 @@ An asynchronous backend sandbox built to learn how to build a web services in Ru
 
 ---
 
-## Core Learning Takeaways
+## Quick Start
 
-* **Thread-Safe State & Static Keys:** Sharing DB pools via `Arc<AppState>` and lazy initializing crypto keys with `std::sync::LazyLock`.
-* **Type-Safe Extraction & RBAC:** Extracting Bearer tokens via `TypedHeader` into `Claims` paired with role-matching middleware (`require_role`).
-* **Socketless Integration Testing:** Testing the HTTP pipeline in-memory via `tower::Service` (`oneshot`/`call`) using an ephemeral `sqlite::memory:` database.
-* **Defensive Traffic Control:** Layering Tower middleware for global rate-limiting (`GovernorLayer`) and timeouts (`TimeoutLayer`).
-* **Declarative Payload Validation:** Binding the `validator` crate to deserialization pipelines to sanitize input data before hitting domain logic.
+```bash
+# copy env
+cp env.example env
+
+# run the service
+docker compose up --build
+
+# testing
+cargo test
+```
 
 ---
 
@@ -41,15 +46,12 @@ An asynchronous backend sandbox built to learn how to build a web services in Ru
 
 ---
 
-## Getting Started
+## Learning Takeaways
 
-```bash
-# copy env
-cp env.example env
-
-# run the service
-docker compose up --build
-
-# testing
-cargo test
-```
+| Concept | Implementation |
+|---|---|
+| Thread-Safe State & Static Keys | Sharing DB pools via `Arc<AppState>` and lazy initializing crypto keys with `std::sync::LazyLock`. |
+| Type-Safe Extraction & RBAC | Extracting Bearer tokens via `TypedHeader` into `Claims` paired with role-matching middleware (`require_role`). |
+| Socketless Integration Testing | Testing the HTTP pipeline in-memory via `tower::Service` (`oneshot`/`call`) using an ephemeral `sqlite::memory:` database. |
+| Defensive Traffic Control | Layering Tower middleware for global rate-limiting (`GovernorLayer`) and timeouts (`TimeoutLayer`). |
+| Declarative Payload Validation | Binding the `validator` crate to deserialization pipelines to sanitize input data before hitting domain logic. |
