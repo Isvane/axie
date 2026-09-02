@@ -1,4 +1,4 @@
-# Axie
+# axie
 
 An asynchronous backend sandbox built to learn how to build a web services in Rust.
 
@@ -8,7 +8,7 @@ An asynchronous backend sandbox built to learn how to build a web services in Ru
 
 ```bash
 # copy env
-cp env.example env
+cp .env.example .env
 
 # run the service
 docker compose up --build
