@@ -1,6 +1,6 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.96-alpine AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-alpine AS chef
 WORKDIR /app
-RUN apk add --no-cache musl-dev tzdata
+RUN apk add --no-cache build-base musl-dev tzdata
 
 FROM chef AS planner
 COPY . .

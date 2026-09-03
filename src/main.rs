@@ -25,6 +25,13 @@ mod test;
 
 use models::AppState;
 
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
@@ -77,7 +84,7 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
     let state = Arc::new(AppState { db });
 
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(50)
+        .per_millisecond(20)
         .burst_size(200)
         .key_extractor(tower_governor::key_extractor::SmartIpKeyExtractor)
         .finish()
