@@ -1,32 +1,36 @@
 # axie
 
-An asynchronous backend sandbox built to learn how to build a web services in Rust.
+An async Rust backend service built to go beyond simple tutorial projects and handle real-world API stuff properly.
 
 ---
 
 ## Quick Start
 
 ```bash
-# copy env
+# Environment Setup
 cp .env.example .env
 
-# run the service
+# Launch Service & Postgres Container
 docker compose up --build
 
-# testing
+# Run Test (in-memory)
 cargo test
 ```
 
 ---
 
-## API Endpoints
+## Architecture
 
-### Global Middleware
-* **Rate Limiting:** `GovernorLayer` (50 req/sec, burst 200) via client IP.
-* **Timeouts:** `TimeoutLayer` (10-second limit).
-* **Observability:** `TraceLayer` structured metrics.
+* **Axum + Tokio:** Handles the HTTP routes and async runtime.
+* **Non-blocking Auth:** Argon2 password hashing takes time, so I threw it into tokio::task::spawn_blocking so it doesn't freeze the main async event loop while users log in.
+* **Role-Based Access Control:** Custom JWT extractor that guards routes based on roles (User, Admin, and Owner).
+* **Jemalloc Allocator:** Swapped the default memory allocator for tikv-jemallocator to bypass musl's allocation bottlenecks on Alpine.
+* **Postgres + Toasty:** Uses toasty ORM with embedded migrations that run automatically when the app boots up.
+* **Traffic Guards:** Added rate limiting (tower-governor) so endpoints don't get spammed, plus graceful shutdowns when terminating the process.
 
-### Routes Matrix
+---
+
+## API Routes
 
 | Method | Endpoint | Description | Extractors / Middleware |
 | :--- | :--- | :--- | :--- |
@@ -43,15 +47,3 @@ cargo test
 | **POST**| `/owner/transfer-ownership` | Transfer company ownership | **JWT (`Claims`)** + `Json<TransferOwnershipPayload>` + Owner Role |
 | **PATCH**| `/owner/rename-company` | Update company name for all members | **JWT (`Claims`)** + `Json<UpdateCompanyPayload>` + Owner Role |
 | **ANY** | `/assets/*` | Static asset / SPA fallback | `ServeDir` / `ServeFile` ("public") |
-
----
-
-## Learning Takeaways
-
-| Concept | Implementation |
-|---|---|
-| Thread-Safe State & Static Keys | Sharing DB pools via `Arc<AppState>` and lazy initializing crypto keys with `std::sync::LazyLock`. |
-| Type-Safe Extraction & RBAC | Extracting Bearer tokens via `TypedHeader` into `Claims` paired with role-matching middleware (`require_role`). |
-| Socketless Integration Testing | Testing the HTTP pipeline in-memory via `tower::Service` (`oneshot`/`call`) using an ephemeral `sqlite::memory:` database. |
-| Defensive Traffic Control | Layering Tower middleware for global rate-limiting (`GovernorLayer`) and timeouts (`TimeoutLayer`). |
-| Declarative Payload Validation | Binding the `validator` crate to deserialization pipelines to sanitize input data before hitting domain logic. |
