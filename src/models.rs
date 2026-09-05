@@ -9,18 +9,18 @@ pub enum Role {
 }
 
 #[derive(Debug, toasty::Model, Serialize, Deserialize, Clone)]
-pub(crate) struct User {
+pub struct User {
     #[key]
     #[auto]
-    pub(crate) id: u64,
-    pub(crate) name: String,
-    pub(crate) company: String,
-    pub(crate) role: Role,
+    pub id: u64,
+    pub name: String,
+    pub company: String,
+    pub role: Role,
 
     #[serde(skip_serializing, default)]
-    pub(crate) password_hash: String,
+    pub password_hash: String,
     #[unique]
-    pub(crate) email: String,
+    pub email: String,
 }
 
 pub struct AppState {
@@ -34,37 +34,37 @@ pub struct Pagination {
 }
 
 #[derive(Deserialize, validator::Validate)]
-pub(crate) struct CreateUser {
+pub struct CreateUser {
     #[validate(length(min = 1, message = "Name cannot be empty"))]
-    pub(crate) name: String,
+    pub name: String,
     #[validate(email(message = "Invalid email address"))]
-    pub(crate) email: String,
+    pub email: String,
     #[validate(length(min = 8, message = "Password have to be 8 character long minimum"))]
-    pub(crate) password: String,
-    pub(crate) company: String,
-    pub(crate) role: Option<Role>,
+    pub password: String,
+    pub company: String,
+    pub role: Option<Role>,
 }
 
 #[derive(Deserialize, validator::Validate)]
-pub(crate) struct UpdateUser {
+pub struct UpdateUser {
     #[validate(length(min = 1, message = "Name cannot be empty"))]
-    pub(crate) name: String,
+    pub name: String,
     #[validate(email(message = "Invalid email address"))]
-    pub(crate) email: String,
+    pub email: String,
 }
 
 #[derive(Deserialize)]
-pub(crate) struct ChangeRolePayload {
-    pub(crate) role: Role,
+pub struct ChangeRolePayload {
+    pub role: Role,
 }
 
 #[derive(Deserialize)]
-pub(crate) struct TransferOwnershipPayload {
-    pub(crate) new_owner_id: u64,
+pub struct TransferOwnershipPayload {
+    pub new_owner_id: u64,
 }
 
 #[derive(Deserialize, validator::Validate)]
-pub(crate) struct UpdateCompanyPayload {
+pub struct UpdateCompanyPayload {
     #[validate(length(min = 1, message = "Company name cannot be empty"))]
-    pub(crate) company: String,
+    pub company: String,
 }

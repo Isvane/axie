@@ -19,10 +19,10 @@ static KEYS: LazyLock<Keys> = LazyLock::new(|| {
 });
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct Claims {
-    pub(crate) sub: String,
-    pub(crate) company: String,
-    pub(crate) role: Role,
+pub struct Claims {
+    pub sub: String,
+    pub company: String,
+    pub role: Role,
     exp: u64,
 }
 
@@ -86,7 +86,7 @@ impl Display for Claims {
 }
 
 #[derive(Debug, Serialize)]
-pub(crate) struct AuthBody {
+pub struct AuthBody {
     access_token: String,
     token_type: String,
 }

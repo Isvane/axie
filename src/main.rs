@@ -15,15 +15,13 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod auth;
-mod errors;
-mod handlers;
-mod models;
+use axie::{
+    auth, handlers,
+    models::{self, AppState},
+};
 
 #[cfg(test)]
 mod test;
-
-use models::AppState;
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
@@ -57,14 +55,15 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    match db.push_schema().await {
-        Ok(_) => println!("Database schema initialized"),
-        Err(e) => {
-            if !e.to_string().contains("already exist") {
-                panic!("Failed to sync database: {}", e)
+    match toasty::embed_migrations!().apply(&db).await {
+        Ok(report) => {
+            if report.applied() > 0 {
+                println!("Successfully applied {} migrations", report.applied());
+            } else {
+                println!("Database schema is up to date");
             }
-            println!("Schema already exists, skipping initialization");
         }
+        Err(e) => panic!("Failed to apply database migrations: {}", e),
     }
 
     let app = app(db);

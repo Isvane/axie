@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = "0.8.9"
 serde = { version = "1.0.228", features = ["derive"] }
-toasty = { version = "=0.6.1", features = ["postgresql", "sqlite"] }
+toasty = { version = "=0.10.0", features = ["postgresql", "sqlite"] }
 tokio = { version = "1.52.3", features = ["full"] }
 tower-http = { version = "0.7.0", features = ["trace", "timeout", "fs"] }
 tracing = "0.1.44"
@@ -21,3 +21,5 @@ dotenvy = "0.15.7"
 rand = "0.8"
 argon2 = "0.5.3"
 tikv-jemallocator = "0.7.0"
+toasty-cli = "0.10.0"
+anyhow = "1.0.104"
