@@ -21,11 +21,11 @@ cargo test
 
 ## Architecture
 
-* **Axum + Tokio:** Handles the HTTP routes and async runtime.
+* **Axum and Tokio:** Handles the HTTP routes and async runtime.
 * **Non-blocking Auth:** Argon2 password hashing takes time, so I threw it into tokio::task::spawn_blocking so it doesn't freeze the main async event loop while users log in.
 * **Role-Based Access Control:** Custom JWT extractor that guards routes based on roles (User, Admin, and Owner).
 * **Jemalloc Allocator:** Swapped the default memory allocator for tikv-jemallocator to bypass musl's allocation bottlenecks on Alpine.
-* **Postgres + Toasty:** Uses toasty ORM with embedded migrations that run automatically when the app boots up.
+* **Database and Migration:** Uses toasty ORM with embedded migrations that run automatically when the app boots up.
 * **Traffic Guards:** Added rate limiting (tower-governor) so endpoints don't get spammed, plus graceful shutdowns when terminating the process.
 
 ---

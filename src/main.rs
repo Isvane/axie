@@ -114,6 +114,7 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
         }));
 
     Router::new()
+        .route("/health", get(|| async { StatusCode::OK }))
         .route("/", get(handlers::items::index))
         .route("/pages", get(handlers::items::list_items))
         .route("/login", post(handlers::authentication::login))
