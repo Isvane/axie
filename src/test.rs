@@ -1,6 +1,5 @@
 use super::*;
 use crate::auth::sign_token;
-use crate::models::User;
 use axum::{
     body::Body,
     extract::ConnectInfo,
@@ -8,6 +7,8 @@ use axum::{
 };
 use std::net::SocketAddr;
 use tower::{Service, ServiceExt};
+
+use axie::models::User;
 
 fn create_test_request(method: &str, uri: &str) -> axum::http::request::Builder {
     let peer_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
@@ -21,7 +22,7 @@ fn get_test_token(user_id: &str) -> String {
     sign_token(
         user_id.to_string(),
         "Microsoft".to_string(),
-        models::Role::Admin,
+        axie::models::Role::Admin,
     )
     .expect("Failed to sign test token")
 }
@@ -30,7 +31,7 @@ fn get_owner_token(user_id: &str, company: &str) -> String {
     sign_token(
         user_id.to_string(),
         company.to_string(),
-        models::Role::Owner,
+        axie::models::Role::Owner,
     )
     .expect("Failed to sign owner test token")
 }
@@ -50,7 +51,7 @@ async fn setup_test_app() -> axum::Router {
         .await
         .expect("Failed to sync test database schema");
 
-    app(db)
+    app(db).await
 }
 
 #[tokio::test]
@@ -402,7 +403,7 @@ async fn test_change_user_role_forbidden_as_regular_user() {
     let user_token = crate::auth::sign_token(
         "1".to_string(),
         "TestCompany".to_string(),
-        models::Role::User,
+        axie::models::Role::User,
     )
     .expect("Failed to sign test token");
 

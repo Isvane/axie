@@ -1,0 +1,4 @@
+p, admin, /admin/*, (GET|POST|PATCH|DELETE)
+p, owner, /owner/*, (GET|POST|PATCH|DELETE)
+
+g, owner, admin

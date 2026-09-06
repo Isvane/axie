@@ -20,6 +20,8 @@ COPY --from=chef /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=chef /usr/share/zoneinfo /usr/share/zoneinfo
 
 COPY ./public /app/public
+COPY ./rbac_model.conf /app/rbac_model.conf
+COPY ./rbac_policy.csv /app/rbac_policy.csv
 
 COPY --from=builder /app/target/release/axie /app/axie
 

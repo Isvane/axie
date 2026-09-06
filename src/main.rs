@@ -4,9 +4,10 @@ use axum::{
     middleware,
     routing::{delete, get, patch, post},
 };
+use casbin::{CoreApi, DefaultModel, Enforcer, FileAdapter};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::signal;
+use tokio::{signal, sync::RwLock};
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -15,10 +16,7 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use axie::{
-    auth, handlers,
-    models::{self, AppState},
-};
+use axie::{auth, handlers, models::AppState};
 
 #[cfg(test)]
 mod test;
@@ -72,15 +70,27 @@ async fn main() {
 
     axum::serve(
         listener,
-        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        app.await
+            .into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await
     .unwrap();
 }
 
-pub(crate) fn app(db: toasty::db::Db) -> Router {
-    let state = Arc::new(AppState { db });
+pub(crate) async fn app(db: toasty::db::Db) -> Router {
+    let model = DefaultModel::from_file("rbac_model.conf")
+        .await
+        .expect("Failed to load Casbin model");
+    let adapter = FileAdapter::new("rbac_policy.csv");
+    let enforcer = Enforcer::new(model, adapter)
+        .await
+        .expect("Failed to initialize Casbin enforcer");
+
+    let state = Arc::new(AppState {
+        db,
+        enforcer: Arc::new(RwLock::new(enforcer)),
+    });
 
     let governor_conf = GovernorConfigBuilder::default()
         .per_millisecond(20)
@@ -98,29 +108,30 @@ pub(crate) fn app(db: toasty::db::Db) -> Router {
 
     let admin_routes = Router::new()
         .route("/list", get(handlers::admin::list_users))
-        .route("/{id}/role", patch(handlers::admin::change_user_role))
-        .route_layer(middleware::from_fn(|c, r, n| {
-            auth::require_role(models::Role::Admin, c, r, n)
-        }));
+        .route("/{id}/role", patch(handlers::admin::change_user_role));
 
     let owner_routes = Router::new()
         .route(
             "/transfer-ownership",
             post(handlers::owner::transfer_ownership),
         )
-        .route("/rename-company", post(handlers::owner::rename_company))
-        .route_layer(middleware::from_fn(|c, r, n| {
-            auth::require_role(models::Role::Owner, c, r, n)
-        }));
+        .route("/rename-company", post(handlers::owner::rename_company));
+
+    let protected_routes = Router::new()
+        .nest("/owner", owner_routes)
+        .nest("/admin", admin_routes)
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth::casbin_enforce,
+        ));
 
     Router::new()
         .route("/health", get(|| async { StatusCode::OK }))
         .route("/", get(handlers::items::index))
         .route("/pages", get(handlers::items::list_items))
         .route("/login", post(handlers::authentication::login))
-        .nest("/owner", owner_routes)
-        .nest("/admin", admin_routes)
         .nest("/users", user_routes)
+        .merge(protected_routes)
         .nest_service("/assets", ServeDir::new("public"))
         .fallback_service(
             ServeDir::new("public").not_found_service(ServeFile::new("public/index.html")),

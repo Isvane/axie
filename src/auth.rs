@@ -1,17 +1,19 @@
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
 use axum::{
-    RequestPartsExt, extract::FromRequestParts, http::Request, middleware::Next, response::Response,
+    RequestPartsExt, extract::FromRequestParts, extract::State, http::Request, middleware::Next,
+    response::Response,
 };
 use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use casbin::CoreApi;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, sync::LazyLock};
+use std::{fmt::Display, sync::Arc, sync::LazyLock};
 
 use crate::errors::{AppError, AuthError};
-use crate::models::Role;
+use crate::models::{AppState, Role};
 
 static KEYS: LazyLock<Keys> = LazyLock::new(|| {
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
@@ -48,16 +50,24 @@ where
     }
 }
 
-pub async fn require_role(
-    required_role: Role,
+pub async fn casbin_enforce(
+    State(state): State<Arc<AppState>>,
     claims: Claims,
     request: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, AppError> {
-    if claims.role == required_role {
-        Ok(next.run(request).await)
-    } else {
-        Err(AppError::Forbidden("Forbidden".to_string()))
+    let sub = claims.role.to_string();
+    let obj = request.uri().path().to_string();
+    let act = request.method().as_str().to_string();
+
+    let enforcer = state.enforcer.write().await;
+
+    match enforcer.enforce((sub.as_str(), obj.as_str(), act.as_str())) {
+        Ok(true) => Ok(next.run(request).await),
+        Ok(false) => Err(AppError::Forbidden(
+            "Forbidden: Insufficient permissions".into(),
+        )),
+        Err(e) => Err(AppError::InternalDbError(format!("Casbin error: {e}"))),
     }
 }
 
