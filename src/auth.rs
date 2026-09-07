@@ -60,9 +60,12 @@ pub async fn casbin_enforce(
     let obj = request.uri().path().to_string();
     let act = request.method().as_str().to_string();
 
-    let enforcer = state.enforcer.write().await;
+    let enforce_result = {
+        let enforcer = state.enforcer.read().await;
+        enforcer.enforce((sub.as_str(), obj.as_str(), act.as_str()))
+    };
 
-    match enforcer.enforce((sub.as_str(), obj.as_str(), act.as_str())) {
+    match enforce_result {
         Ok(true) => Ok(next.run(request).await),
         Ok(false) => Err(AppError::Forbidden(
             "Forbidden: Insufficient permissions".into(),
