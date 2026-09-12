@@ -1,4 +1,4 @@
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use axum::{
     RequestPartsExt, extract::FromRequestParts, extract::State, http::Request, middleware::Next,
     response::Response,
@@ -135,11 +135,10 @@ impl Keys {
 
 pub async fn hash_password(password: String) -> Result<String, AppError> {
     tokio::task::spawn_blocking(move || {
-        let salt = SaltString::generate(&mut rand::rngs::OsRng);
         let argon2 = Argon2::default();
 
         let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)
+            .hash_password(password.as_bytes())
             .map_err(|e| AppError::InternalDbError(format!("Hashing failed: {e}")))?;
 
         Ok(password_hash.to_string())
