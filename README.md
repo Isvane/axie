@@ -33,6 +33,38 @@ cargo test
 
 ---
 
+## Benchmarks
+
+Layer were turned off and logging were also set to off on the dockerfile when running this benchmark.
+
+Using tikv-jemalloc:
+```bash
+echo "GET http://localhost:3000/health" | vegeta attack -rate=0 -max-workers=300 -duration=10s | vegeta report
+Requests      [total, rate, throughput]         759572, 75951.77, 75951.07
+Duration      [total, attack, wait]             10.001s, 10.001s, 92.092µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  47.123µs, 2.968ms, 2.689ms, 5.433ms, 6.359ms, 8.315ms, 17.393ms
+Bytes In      [total, mean]                     0, 0.00
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           100.00%
+Status Codes  [code:count]                      200:759572
+Error Set:
+```
+
+Using default alloc:
+```bash
+echo "GET http://localhost:3000/health" | vegeta attack -rate=0 -max-workers=300 -duration=10s | vegeta report
+Requests      [total, rate, throughput]         727057, 72702.34, 72694.08
+Duration      [total, attack, wait]             10.002s, 10s, 1.136ms
+Latencies     [min, mean, 50, 90, 95, 99, max]  43.67µs, 3.178ms, 2.924ms, 5.656ms, 6.579ms, 8.455ms, 29.323ms
+Bytes In      [total, mean]                     0, 0.00
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           100.00%
+Status Codes  [code:count]                      200:727057
+Error Set:
+```
+
+---
+
 ## API Routes
 
 | Method | Endpoint | Description | Extractors / Middleware |
