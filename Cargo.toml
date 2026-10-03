@@ -20,6 +20,6 @@ axum-extra = { version = "0.12.6", features = ["typed-header"] }
 dotenvy = "0.15.7"
 argon2 = "0.6.0"
 tikv-jemallocator = "0.7.0"
-toasty-cli = "0.10.0"
+toasty-cli = "0.11.0"
 anyhow = "1.0.104"
 casbin = "2.20.0"
