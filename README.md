@@ -22,7 +22,7 @@ cargo test
 ## Architecture
 
 * **Axum & Tokio:** Built on Axum web framework powered by Tokio's async runtime.
-* **Casbin Authorization Engine:** Uses `casbin` (RBAC model) wrapped in an `Arc<RwLock<Enforcer>>` inside app state. Requests to protected routes pass through custom Axum middleware (`casbin_enforce`) that checks the request path, HTTP method, and user role against policy rules.
+* **Casbin Authorization Engine:** Uses `casbin` (RBAC model) wrapped in an `Arc<Enforcer>` inside app state. Requests to protected routes pass through custom Axum middleware (`casbin_enforce`) that checks the request path, HTTP method, and user role against policy rules.
 * **Non-blocking Auth & Lazy Keys:** Argon2 password hashing runs off the async thread pool using `tokio::task::spawn_blocking` to prevent event loop starvation. JWT encoding/decoding keys are lazily initialized at startup using `std::sync::LazyLock`.
 * **Database & Automatic Migrations:** Powered by `Postgres` and `toasty` ORM with embedded migrations (`toasty::embed_migrations!`) applied automatically on startup.
 * **Traffic & Request Safeguards:**
@@ -40,26 +40,25 @@ Layer were turned off and logging were also set to off on the dockerfile when ru
 Using tikv-jemalloc:
 ```bash
 echo "GET http://localhost:3000/health" | vegeta attack -rate=0 -max-workers=300 -duration=10s | vegeta report
-Requests      [total, rate, throughput]         759572, 75951.77, 75951.07
-Duration      [total, attack, wait]             10.001s, 10.001s, 92.092µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  47.123µs, 2.968ms, 2.689ms, 5.433ms, 6.359ms, 8.315ms, 17.393ms
+Requests      [total, rate, throughput]         771694, 77169.25, 77162.04
+Duration      [total, attack, wait]             10.001s, 10s, 933.94µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  48.702µs, 2.856ms, 2.633ms, 5.127ms, 6.027ms, 7.87ms, 15.843ms
 Bytes In      [total, mean]                     0, 0.00
 Bytes Out     [total, mean]                     0, 0.00
 Success       [ratio]                           100.00%
-Status Codes  [code:count]                      200:759572
+Status Codes  [code:count]                      200:771694
 Error Set:
 ```
 
 Using default alloc:
 ```bash
-echo "GET http://localhost:3000/health" | vegeta attack -rate=0 -max-workers=300 -duration=10s | vegeta report
-Requests      [total, rate, throughput]         727057, 72702.34, 72694.08
-Duration      [total, attack, wait]             10.002s, 10s, 1.136ms
-Latencies     [min, mean, 50, 90, 95, 99, max]  43.67µs, 3.178ms, 2.924ms, 5.656ms, 6.579ms, 8.455ms, 29.323ms
+Requests      [total, rate, throughput]         767826, 76781.93, 76771.54
+Duration      [total, attack, wait]             10.001s, 10s, 1.354ms
+Latencies     [min, mean, 50, 90, 95, 99, max]  41.444µs, 2.952ms, 2.701ms, 5.18ms, 6.043ms, 7.763ms, 17.298ms
 Bytes In      [total, mean]                     0, 0.00
 Bytes Out     [total, mean]                     0, 0.00
 Success       [ratio]                           100.00%
-Status Codes  [code:count]                      200:727057
+Status Codes  [code:count]                      200:767826
 Error Set:
 ```
 

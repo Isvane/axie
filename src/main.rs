@@ -7,7 +7,7 @@ use axum::{
 use casbin::{CoreApi, DefaultModel, Enforcer, FileAdapter};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::{signal, sync::RwLock};
+use tokio::signal;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -89,7 +89,7 @@ pub(crate) async fn app(db: toasty::db::Db) -> Router {
 
     let state = Arc::new(AppState {
         db,
-        enforcer: Arc::new(RwLock::new(enforcer)),
+        enforcer: Arc::new(enforcer),
     });
 
     let governor_conf = GovernorConfigBuilder::default()

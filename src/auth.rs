@@ -56,14 +56,11 @@ pub async fn casbin_enforce(
     request: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, AppError> {
-    let sub = claims.role.to_string();
-    let obj = request.uri().path().to_string();
-    let act = request.method().as_str().to_string();
-
-    let enforce_result = {
-        let enforcer = state.enforcer.read().await;
-        enforcer.enforce((sub.as_str(), obj.as_str(), act.as_str()))
-    };
+    let enforce_result = state.enforcer.enforce((
+        claims.role.as_str(),
+        request.uri().path(),
+        request.method().as_str(),
+    ));
 
     match enforce_result {
         Ok(true) => Ok(next.run(request).await),

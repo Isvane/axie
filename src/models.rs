@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, toasty::Embed)]
 #[serde(rename_all = "lowercase")]
@@ -9,6 +8,16 @@ pub enum Role {
     Admin,
     Owner,
     User,
+}
+
+impl Role {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Role::Admin => "admin",
+            Role::Owner => "owner",
+            Role::User => "user",
+        }
+    }
 }
 
 impl std::fmt::Display for Role {
@@ -38,7 +47,7 @@ pub struct User {
 
 pub struct AppState {
     pub db: toasty::db::Db,
-    pub enforcer: Arc<RwLock<casbin::Enforcer>>,
+    pub enforcer: Arc<casbin::Enforcer>,
 }
 
 #[derive(Deserialize)]
