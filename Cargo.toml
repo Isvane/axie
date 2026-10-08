@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = "0.8.9"
 serde = { version = "1.0.228", features = ["derive"] }
-toasty = { version = "=0.10.0", features = ["postgresql", "sqlite"] }
+toasty = { version = "=0.11.0", features = ["postgresql", "sqlite"] }
 tokio = { version = "1.52.3", features = ["full"] }
 tower-http = { version = "0.7.0", features = ["trace", "timeout", "fs"] }
 tracing = "0.1.44"
@@ -20,6 +20,6 @@ axum-extra = { version = "0.12.6", features = ["typed-header"] }
 dotenvy = "0.15.7"
 argon2 = "0.6.0"
 tikv-jemallocator = "0.7.0"
-toasty-cli = "0.10.0"
+toasty-cli = "0.11.0"
 anyhow = "1.0.104"
 casbin = "2.20.0"
