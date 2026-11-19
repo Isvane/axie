@@ -1,6 +1,6 @@
 # axie
 
-An async Rust backend service built to go beyond simple tutorial projects and handle real-world API stuff properly.
+An async Rust backend service built to go beyond simple tutorial projects and handle real-world API stuff "properly".
 
 ---
 
@@ -35,7 +35,8 @@ cargo test
 
 ## Benchmarks
 
-Layer were turned off and logging were also set to off on the dockerfile when running this benchmark.
+Layer were turned off and logging were also set to off on the dockerfile when running this benchmark.  
+Hardware: **i5-10300H**.
 
 Using tikv-jemalloc:
 ```bash
