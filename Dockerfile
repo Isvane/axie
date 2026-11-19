@@ -27,6 +27,6 @@ COPY --from=builder /app/target/release/axie /app/axie
 
 EXPOSE 3000
 
-ENV RUST_LOG="info,tower_http=debug,axum::rejection=trace"
+ENV RUST_LOG="warn,axie=info"
 
 CMD ["./axie"]

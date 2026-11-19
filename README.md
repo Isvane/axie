@@ -40,26 +40,27 @@ Hardware: **i5-10300H**.
 
 Using tikv-jemalloc:
 ```bash
-echo "GET http://localhost:3000/health" | vegeta attack -rate=0 -max-workers=300 -duration=10s | vegeta report
-Requests      [total, rate, throughput]         771694, 77169.25, 77162.04
-Duration      [total, attack, wait]             10.001s, 10s, 933.94µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  48.702µs, 2.856ms, 2.633ms, 5.127ms, 6.027ms, 7.87ms, 15.843ms
-Bytes In      [total, mean]                     0, 0.00
-Bytes Out     [total, mean]                     0, 0.00
+# PATCH http://localhost:3000/users/update/1
+Requests      [total, rate, throughput]         7500, 250.03, 250.02
+Duration      [total, attack, wait]             29.997s, 29.996s, 1.382ms
+Latencies     [min, mean, 50, 90, 95, 99, max]  1.196ms, 1.484ms, 1.395ms, 1.454ms, 1.474ms, 2.534ms, 37.881ms
+Bytes In      [total, mean]                     112500, 15.00
+Bytes Out     [total, mean]                     435000, 58.00
 Success       [ratio]                           100.00%
-Status Codes  [code:count]                      200:771694
+Status Codes  [code:count]                      200:7500
 Error Set:
 ```
 
 Using default alloc:
 ```bash
-Requests      [total, rate, throughput]         767826, 76781.93, 76771.54
-Duration      [total, attack, wait]             10.001s, 10s, 1.354ms
-Latencies     [min, mean, 50, 90, 95, 99, max]  41.444µs, 2.952ms, 2.701ms, 5.18ms, 6.043ms, 7.763ms, 17.298ms
-Bytes In      [total, mean]                     0, 0.00
-Bytes Out     [total, mean]                     0, 0.00
+# PATCH http://localhost:3000/users/update/1
+Requests      [total, rate, throughput]         7500, 250.03, 249.13
+Duration      [total, attack, wait]             30.105s, 29.996s, 109.325ms
+Latencies     [min, mean, 50, 90, 95, 99, max]  1.255ms, 8.588ms, 1.461ms, 2.037ms, 63.537ms, 152.196ms, 345.072ms
+Bytes In      [total, mean]                     112500, 15.00
+Bytes Out     [total, mean]                     435000, 58.00
 Success       [ratio]                           100.00%
-Status Codes  [code:count]                      200:767826
+Status Codes  [code:count]                      200:7500
 Error Set:
 ```
 
