@@ -101,6 +101,10 @@ pub async fn update_users(
     Path(id): Path<u64>,
     Json(payload): Json<UpdateUser>,
 ) -> Result<ApiResponse, AppError> {
+    if let Err(errors) = payload.validate() {
+        return Err(AppError::InvalidInput(errors.to_string()));
+    }
+
     let auth_id: u64 = claims
         .sub
         .parse()
