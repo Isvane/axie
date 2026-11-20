@@ -65,8 +65,10 @@ async fn main() {
     }
 
     let app = app(db);
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Listening on http://localhost:3000");
+
+    let url = std::env::var("URL").unwrap();
+    let listener = tokio::net::TcpListener::bind(&url).await.unwrap();
+    println!("Listening on {}", url);
 
     axum::serve(
         listener,
