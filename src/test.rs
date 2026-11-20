@@ -77,7 +77,7 @@ async fn test_about_handler() {
 
     let response = app
         .oneshot(
-            create_test_request("GET", "/users")
+            create_test_request("GET", "/user")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -93,7 +93,7 @@ async fn test_greet_handler() {
 
     let response = app
         .oneshot(
-            create_test_request("GET", "/users/greet/isvane")
+            create_test_request("GET", "/user/greet/isvane")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -115,7 +115,7 @@ async fn test_create_user_handle() {
 
     let response = app
         .oneshot(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Isvane", "email": "isvane@testmail.com", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -140,7 +140,7 @@ async fn test_delete_user_handle() {
 
     let response1 = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Isvane", "email": "isvane@testmail.com", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -156,7 +156,7 @@ async fn test_delete_user_handle() {
 
     let response2 = app
         .call(
-            create_test_request("DELETE", "/users/delete/1")
+            create_test_request("DELETE", "/user/1")
                 .header("Authorization", format!("Bearer {}", token))
                 .body(Body::empty())
                 .unwrap(),
@@ -174,7 +174,7 @@ async fn test_delete_user_handle() {
 
     let response3 = app
         .call(
-            create_test_request("DELETE", "/users/delete/1")
+            create_test_request("DELETE", "/user/1")
                 .header("Authorization", format!("Bearer {}", token))
                 .body(Body::empty())
                 .unwrap(),
@@ -191,7 +191,7 @@ async fn test_update_user_handle() {
 
     let response1 = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Isvane", "email": "isvane@testmail.com", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -207,7 +207,7 @@ async fn test_update_user_handle() {
 
     let response2 = app
         .call(
-            create_test_request("PATCH", "/users/update/1")
+            create_test_request("PATCH", "/user/1")
                 .header("Authorization", format!("Bearer {}", token))
                 .header("content-type", "application/json")
                 .body(Body::from(
@@ -233,7 +233,7 @@ async fn test_list_users_handle() {
 
     let response1 = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Isvane", "email": "isvane@testmail.com", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -294,7 +294,7 @@ async fn test_validator_name() {
 
     let response = app
         .oneshot(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "", "email": "isvane@testmail.com", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -321,7 +321,7 @@ async fn test_validator_email() {
 
     let response = app
         .oneshot(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Isvane", "email": "not-email", "password": "supersecurepassword123", "company": "Microsoft"}"#,
@@ -348,7 +348,7 @@ async fn test_change_user_role_success_as_admin() {
 
     let response1 = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Regular User", "email": "regular@testmail.com", "password": "password123", "company": "Microsoft"}"#,
@@ -388,7 +388,7 @@ async fn test_change_user_role_forbidden_as_regular_user() {
 
     let response1 = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Regular User", "email": "regular@testmail.com", "password": "password123", "company": "Microsoft"}"#,
@@ -427,7 +427,7 @@ async fn test_transfer_ownership_success() {
 
     let _ = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Owner User", "email": "owner@microsoft.com", "password": "password123", "company": "Microsoft"}"#,
@@ -439,7 +439,7 @@ async fn test_transfer_ownership_success() {
 
     let _ = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "New Owner", "email": "new_owner@microsoft.com", "password": "password123", "company": "Microsoft"}"#,
@@ -498,7 +498,7 @@ async fn test_transfer_ownership_cross_company_forbidden() {
 
     let _ = app
         .call(
-            create_test_request("POST", "/users/create")
+            create_test_request("POST", "/user/create")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     r#"{"name": "Google User", "email": "user@google.com", "password": "password123", "company": "Google"}"#,

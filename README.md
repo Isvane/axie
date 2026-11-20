@@ -74,11 +74,11 @@ Error Set:
 | **GET** | `/` | Root Index | None |
 | **GET** | `/pages` | Query-driven list pagination | `Query<Pagination>` |
 | **POST** | `/login` | Authenticate and issue JWT | `Json<AuthPayload>` |
-| **GET** | `/users/` | User section about | None |
-| **POST** | `/users/create` | Validate and insert new user | `Json<CreateUser>` |
-| **PATCH** | `/users/update/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` |
-| **DELETE** | `/users/delete/{id}` | Remove a user by ID | **JWT (`Claims`)** + `Path<u64>` |
-| **GET** | `/users/greet/{name}` | Dynamic path injection | `Path<String>` |
+| **GET** | `/user/` | User section about | None |
+| **POST** | `/user/create` | Validate and insert new user | `Json<CreateUser>` |
+| **PATCH** | `/user/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` |
+| **DELETE** | `/user/{id}` | Remove a user by ID | **JWT (`Claims`)** + `Path<u64>` |
+| **GET** | `/user/greet/{name}` | Dynamic path injection | `Path<String>` |
 | **GET** | `/admin/list` | Fetch all users | **Casbin Enforcer** + **JWT (`Claims`)** + `Query<Pagination>` |
 | **PATCH** | `/admin/{id}/role` | Modify user role level | **Casbin Enforcer** + **JWT (`Claims`)** + `Path<u64>` + `Json<ChangeRolePayload>` |
 | **POST** | `/owner/transfer-ownership` | Transfer company ownership | **Casbin Enforcer** + **JWT (`Claims`)** + `Json<TransferOwnershipPayload>` |

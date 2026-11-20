@@ -104,8 +104,8 @@ pub(crate) async fn app(db: toasty::db::Db) -> Router {
     let user_routes = Router::new()
         .route("/", get(handlers::users::about))
         .route("/create", post(handlers::users::create_user))
-        .route("/delete/{id}", delete(handlers::users::delete_user))
-        .route("/update/{id}", patch(handlers::users::update_users))
+        .route("/{id}", delete(handlers::users::delete_user))
+        .route("/{id}", patch(handlers::users::update_users))
         .route("/greet/{name}", get(handlers::users::greet_user));
 
     let admin_routes = Router::new()
@@ -132,7 +132,7 @@ pub(crate) async fn app(db: toasty::db::Db) -> Router {
         .route("/", get(handlers::items::index))
         .route("/pages", get(handlers::items::list_items))
         .route("/login", post(handlers::authentication::login))
-        .nest("/users", user_routes)
+        .nest("/user", user_routes)
         .merge(protected_routes)
         .nest_service("/assets", ServeDir::new("public"))
         .fallback_service(
