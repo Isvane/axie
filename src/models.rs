@@ -45,6 +45,25 @@ pub struct User {
     pub email: String,
 }
 
+#[derive(Debug, toasty::Model, Clone)]
+pub struct UserRefresh {
+    #[key]
+    #[auto]
+    pub primary_key: u64,
+
+    #[unique]
+    pub hash_token: String,
+
+    #[index]
+    pub user_id: u64,
+
+    #[belongs_to]
+    pub user: toasty::Deferred<User>,
+
+    pub exp_at: u64,
+    pub revoked: bool,
+}
+
 pub struct AppState {
     pub db: toasty::db::Db,
     pub enforcer: Arc<casbin::Enforcer>,
@@ -74,6 +93,11 @@ pub struct UpdateUser {
     pub name: String,
     #[validate(email(message = "Invalid email address"))]
     pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RefreshPayload {
+    pub refresh_token: String,
 }
 
 #[derive(Deserialize)]

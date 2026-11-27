@@ -10,6 +10,13 @@ use tower::{Service, ServiceExt};
 
 use axie::models::User;
 
+#[derive(serde::Deserialize)]
+struct AuthResponse {
+    access_token: String,
+    refresh_token: String,
+    token_type: String,
+}
+
 fn create_test_request(method: &str, uri: &str) -> axum::http::request::Builder {
     let peer_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     Request::builder()
@@ -522,4 +529,353 @@ async fn test_transfer_ownership_cross_company_forbidden() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+async fn register_and_login(
+    app: &mut axum::Router,
+    name: &str,
+    email: &str,
+    password: &str,
+    company: &str,
+) -> AuthResponse {
+    let create_res = app
+        .call(
+            create_test_request("POST", "/user/create")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": name,
+                        "email": email,
+                        "password": password,
+                        "company": company,
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(create_res.status(), StatusCode::CREATED);
+
+    let login_res = app
+        .call(
+            create_test_request("POST", "/login")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "email": email,
+                        "password": password,
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login_res.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(login_res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    serde_json::from_slice(&body).unwrap()
+}
+
+#[tokio::test]
+async fn test_login_success_and_access_protected_route() {
+    let mut app = setup_test_app().await;
+
+    let auth = register_and_login(
+        &mut app,
+        "Isvane",
+        "isvane@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    assert_eq!(auth.token_type, "Bearer");
+    assert!(!auth.access_token.is_empty());
+    assert!(!auth.refresh_token.is_empty());
+
+    let update_res = app
+        .call(
+            create_test_request("PATCH", "/user/1")
+                .header("Authorization", format!("Bearer {}", auth.access_token))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"name": "Isvane Updated", "email": "isvane@testmail.com"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(update_res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_login_wrong_credentials() {
+    let mut app = setup_test_app().await;
+
+    let _ = register_and_login(
+        &mut app,
+        "Isvane",
+        "isvane@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    let response = app
+        .call(
+            create_test_request("POST", "/login")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"email": "isvane@testmail.com", "password": "wrongpassword"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_refresh_token_rotation_success() {
+    let mut app = setup_test_app().await;
+
+    let initial = register_and_login(
+        &mut app,
+        "Isvane",
+        "isvane@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    let refresh_res = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": initial.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(refresh_res.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(refresh_res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let rotated: AuthResponse = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(rotated.token_type, "Bearer");
+    assert!(!rotated.access_token.is_empty());
+    assert_ne!(initial.refresh_token, rotated.refresh_token);
+
+    let update_res = app
+        .call(
+            create_test_request("PATCH", "/user/1")
+                .header("Authorization", format!("Bearer {}", rotated.access_token))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"name": "Rotated User", "email": "isvane@testmail.com"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(update_res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_refresh_token_reuse_detection_revokes_all_sessions() {
+    let mut app = setup_test_app().await;
+
+    let initial = register_and_login(
+        &mut app,
+        "Isvane",
+        "isvane@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    let first_refresh = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": initial.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(first_refresh.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(first_refresh.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let rotated: AuthResponse = serde_json::from_slice(&body).unwrap();
+
+    let replay_res = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": initial.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(replay_res.status(), StatusCode::UNAUTHORIZED);
+
+    let subsequent_res = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": rotated.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(subsequent_res.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_refresh_updates_user_role_claims() {
+    let mut app = setup_test_app().await;
+
+    let initial = register_and_login(
+        &mut app,
+        "Regular User",
+        "regular@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    let forbidden_res = app
+        .call(
+            create_test_request("GET", "/admin/list")
+                .header("Authorization", format!("Bearer {}", initial.access_token))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(forbidden_res.status(), StatusCode::FORBIDDEN);
+
+    let admin_token = get_test_token("99");
+    let promote_res = app
+        .call(
+            create_test_request("PATCH", "/admin/1/role")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"role": "admin"}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(promote_res.status(), StatusCode::OK);
+
+    let refresh_res = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": initial.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(refresh_res.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(refresh_res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let refreshed: AuthResponse = serde_json::from_slice(&body).unwrap();
+
+    let allowed_res = app
+        .call(
+            create_test_request("GET", "/admin/list")
+                .header(
+                    "Authorization",
+                    format!("Bearer {}", refreshed.access_token),
+                )
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(allowed_res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_refresh_invalid_token() {
+    let mut app = setup_test_app().await;
+
+    let response = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"refresh_token": "non_existent_random_token"}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_logout_revokes_refresh_token() {
+    let mut app = setup_test_app().await;
+
+    let auth = register_and_login(
+        &mut app,
+        "Isvane",
+        "isvane@testmail.com",
+        "supersecurepassword123",
+        "Microsoft",
+    )
+    .await;
+
+    let logout_res = app
+        .call(
+            create_test_request("POST", "/logout")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": auth.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(logout_res.status(), StatusCode::NO_CONTENT);
+
+    let refresh_res = app
+        .call(
+            create_test_request("POST", "/refresh")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "refresh_token": auth.refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(refresh_res.status(), StatusCode::UNAUTHORIZED);
 }

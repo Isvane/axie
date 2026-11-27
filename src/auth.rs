@@ -7,9 +7,12 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use casbin::CoreApi;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{fmt::Display, sync::Arc, sync::LazyLock};
 
 use crate::errors::{AppError, AuthError};
@@ -26,6 +29,13 @@ pub struct Claims {
     pub company: String,
     pub role: Role,
     exp: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct GeneratedRefreshToken {
+    pub raw_token: String,
+    pub hash_token: String,
+    pub exp_at: u64,
 }
 
 impl<S> FromRequestParts<S> for Claims
@@ -77,7 +87,7 @@ pub fn sign_token(user_id: String, company: String, role: Role) -> Result<String
         .map_err(|_| AuthError::TokenCreation)?
         .as_secs();
 
-    let expiration = now + (24 * 60 * 60);
+    let expiration = now + (900);
 
     let claims = Claims {
         sub: user_id,
@@ -89,6 +99,31 @@ pub fn sign_token(user_id: String, company: String, role: Role) -> Result<String
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)
 }
 
+pub fn get_refresh_token() -> Result<GeneratedRefreshToken, AuthError> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| AuthError::TokenCreation)?
+        .as_secs();
+
+    let mut bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut bytes);
+
+    let raw_token = URL_SAFE_NO_PAD.encode(bytes);
+    let hash_token = hash_refresh_token(&raw_token);
+    let exp_at = now + (604800);
+
+    Ok(GeneratedRefreshToken {
+        raw_token,
+        hash_token,
+        exp_at,
+    })
+}
+
+pub fn hash_refresh_token(raw_token: &str) -> String {
+    let digest = Sha256::digest(raw_token.as_bytes());
+    hex::encode(digest)
+}
+
 impl Display for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ID: {}\nCompany: {}", self.sub, self.company)
@@ -98,13 +133,15 @@ impl Display for Claims {
 #[derive(Debug, Serialize)]
 pub struct AuthBody {
     access_token: String,
+    refresh_token: String,
     token_type: String,
 }
 
 impl AuthBody {
-    pub fn new(access_token: String) -> Self {
+    pub fn new(access_token: String, refresh_token: String) -> Self {
         Self {
             access_token,
+            refresh_token,
             token_type: "Bearer".to_string(),
         }
     }

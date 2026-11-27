@@ -132,6 +132,8 @@ pub(crate) async fn app(db: toasty::db::Db) -> Router {
         .route("/", get(handlers::items::index))
         .route("/pages", get(handlers::items::list_items))
         .route("/login", post(handlers::authentication::login))
+        .route("/refresh", post(handlers::authentication::refresh))
+        .route("/logout", post(handlers::authentication::logout))
         .nest("/user", user_routes)
         .merge(protected_routes)
         .nest_service("/assets", ServeDir::new("public"))

@@ -36,7 +36,7 @@ impl IntoResponse for AuthError {
                 (StatusCode::UNAUTHORIZED, "Invalid email or password")
             }
             AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
-            AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
+            AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token"),
             AuthError::InvalidHashFormat => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An internal error occured",
