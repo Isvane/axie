@@ -21,15 +21,16 @@ cargo test
 
 ## Architecture
 
-* **Axum & Tokio:** Built on Axum web framework powered by Tokio's async runtime.
-* **Casbin Authorization Engine:** Uses `casbin` (RBAC model) wrapped in an `Arc<Enforcer>` inside app state. Requests to protected routes pass through custom Axum middleware (`casbin_enforce`) that checks the request path, HTTP method, and user role against policy rules.
-* **Non-blocking Auth & Lazy Keys:** Argon2 password hashing runs off the async thread pool using `tokio::task::spawn_blocking` to prevent event loop starvation. JWT encoding/decoding keys are lazily initialized at startup using `std::sync::LazyLock`.
-* **Database & Automatic Migrations:** Powered by `Postgres` and `toasty` ORM with embedded migrations (`toasty::embed_migrations!`) applied automatically on startup.
-* **Traffic & Request Safeguards:**
-  * Rate-limiting via `tower-governor` using `SmartIpKeyExtractor`.
-  * Request timeout protection (`TimeoutLayer`) capping requests at 10 seconds.
-  * Structured tracing via `tower-http` (`TraceLayer`) and `tracing-subscriber`.
-* **Jemalloc Allocator:** Overrides the default memory allocator with `tikv-jemallocator` on non-MSVC targets for enhanced memory performance under high concurrent load.
+- **Axum & Tokio:** Built on Axum web framework powered by Tokio's async runtime.
+- **Casbin Authorization Engine:** Uses `casbin` (RBAC model) wrapped in an `Arc<Enforcer>` inside app state. Requests to protected routes pass through custom Axum middleware (`casbin_enforce`) that checks the request path, HTTP method, and user role against policy rules.
+- **Non-blocking Auth & Lazy Keys:** Argon2 password hashing runs off the async thread pool using `tokio::task::spawn_blocking` to prevent event loop starvation. JWT encoding/decoding keys are lazily initialized at startup using `std::sync::LazyLock`.
+- **Token Rotation & Reuse Detection:** Issues short-lived JWT access tokens (15m) paired with cryptographically random, SHA-256 hashed refresh tokens (7d) persisted in Postgres. Refresh tokens are single-use and rotate on every `/refresh` call; replaying a previously revoked token automatically revokes all active sessions for that user.
+- **Database & Automatic Migrations:** Powered by `Postgres` and `toasty` ORM with embedded migrations (`toasty::embed_migrations!`) applied automatically on startup.
+- **Traffic & Request Safeguards:**
+  - Rate-limiting via `tower-governor` using `SmartIpKeyExtractor`.
+  - Request timeout protection (`TimeoutLayer`) capping requests at 10 seconds.
+  - Structured tracing via `tower-http` (`TraceLayer`) and `tracing-subscriber`.
+- **Jemalloc Allocator:** Overrides the default memory allocator with `tikv-jemallocator` on non-MSVC targets for enhanced memory performance under high concurrent load.
 
 ---
 
@@ -73,7 +74,9 @@ Error Set:
 | **GET** | `/health` | Liveness / Health check endpoint | None |
 | **GET** | `/` | Root Index | None |
 | **GET** | `/pages` | Query-driven list pagination | `Query<Pagination>` |
-| **POST** | `/login` | Authenticate and issue JWT | `Json<AuthPayload>` |
+| **POST** | `/login` | Authenticate and issue access & refresh tokens | `Json<AuthPayload>` |
+| **POST** | `/refresh` | Rotate refresh token and issue new token pair | `Json<RefreshPayload>` |
+| **POST** | `/logout` | Revoke refresh token | `Json<RefreshPayload>` |
 | **GET** | `/user/` | User section about | None |
 | **POST** | `/user/create` | Validate and insert new user | `Json<CreateUser>` |
 | **PATCH** | `/user/{id}` | Update user profile | **JWT (`Claims`)** + `Path<u64>` + `Json<UpdateUser>` |
