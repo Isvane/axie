@@ -40,7 +40,7 @@ Hardware: **i5-10300H**.
 
 Using tikv-jemalloc:
 ```bash
-# PATCH http://localhost:3000/users/update/1
+# PATCH http://localhost:3000/users/1
 Requests      [total, rate, throughput]         7500, 250.03, 250.02
 Duration      [total, attack, wait]             29.997s, 29.996s, 1.382ms
 Latencies     [min, mean, 50, 90, 95, 99, max]  1.196ms, 1.484ms, 1.395ms, 1.454ms, 1.474ms, 2.534ms, 37.881ms
@@ -53,7 +53,7 @@ Error Set:
 
 Using default alloc:
 ```bash
-# PATCH http://localhost:3000/users/update/1
+# PATCH http://localhost:3000/users/1
 Requests      [total, rate, throughput]         7500, 250.03, 249.13
 Duration      [total, attack, wait]             30.105s, 29.996s, 109.325ms
 Latencies     [min, mean, 50, 90, 95, 99, max]  1.255ms, 8.588ms, 1.461ms, 2.037ms, 63.537ms, 152.196ms, 345.072ms
